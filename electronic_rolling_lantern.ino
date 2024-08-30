@@ -5,7 +5,7 @@ Project Name: Electronic Rolling Lantern
 Function Description: When the lantern rolls, the lighting changes 
 color according to the lantern's rolling angle and acceleration. 
 Additionally, it can connect to a smartphone via Bluetooth, 
-allowing users to control the light's on/off state with their phone.
+allowing users to control the light's on/off state and brightness with their phone.
 
 Author: Carla Guo, Created on August 30, 2024
 
@@ -28,6 +28,7 @@ BLEService ledService("180A"); // Bluetooth® Low Energy LED Service
 
 // Bluetooth® Low Energy LED Switch Characteristic - custom 128-bit UUID, read and writable by central
 BLEByteCharacteristic switchCharacteristic("2A56", BLERead | BLEWrite);
+BLEByteCharacteristic BrightCharacteristic("2A5E", BLERead | BLEWrite);
 
 #define PIN A0
 #define NUMPIXELS 60 // Popular NeoPixel ring size
@@ -41,6 +42,7 @@ float az = 0;
 LSM6DS3 myIMU(I2C_MODE, 0x6A);    //I2C device address 0x6A
 
 bool flag = false;
+uint8_t bright = 10;
 
 void setup() {
   Serial.begin(9600);
@@ -64,6 +66,7 @@ void setup() {
 
   // add the characteristic to the service
   ledService.addCharacteristic(switchCharacteristic);
+  ledService.addCharacteristic(BrightCharacteristic);
 
   // add service
   BLE.addService(ledService);
@@ -86,6 +89,9 @@ void loop() {
     while (central.connected()) {
       if (switchCharacteristic.written()) {
         flag = switchCharacteristic.value(); // 根据特征值设置 flag
+      }
+      if (BrightCharacteristic.written()) {
+        bright = BrightCharacteristic.value(); // 根据特征值设置 bright
       }
       // 插入一个短暂的延迟，以避免占用过多 CPU 时间
       delay(50);
@@ -118,7 +124,7 @@ void loop() {
 
     pixels.clear();
     pixels.fill(packedRGB, 0, 60);
-    pixels.setBrightness(10);
+    pixels.setBrightness(bright);
     pixels.show();   // 更新LED颜色
   } else {
     pixels.clear();
